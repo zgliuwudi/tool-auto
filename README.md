@@ -40,8 +40,7 @@
 1. 打开企业微信的目标群聊 → 右上角「...」→ **群机器人** → **添加机器人**
 2. 创建后复制 Webhook 地址，形如：
 
-```
-https://qyapi.weixin.qq.com/cgi-webhook/send?key=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
 （注意：机器人只能在**企业内部群**添加，客户群不支持。）
@@ -102,6 +101,47 @@ python send_to_wecom.py           # 只发送到企业微信群（内容取剪�
 - 用 OpenCV 模板匹配定位「预约会议」按钮、表单「保存」按钮锚点与各输入框
 - 文本输入走剪贴板 + Ctrl+V，支持中文
 - Win32 API 模拟鼠标点击与键盘操作
+
+## 版本与标签（Tag）
+
+本项目用 Git tag 标记稳定版本（如 `v1.0.0`）。tag 一旦打在某个提交上就
+永久指向该版本，可用于：回溯到某个稳定状态、发布 Release 下载 zip、
+使用者按版本锁定代码。
+
+### 在 GitHub 网页上创建 tag
+
+1. 打开仓库主页 → 右侧栏 **Releases** → **Create a new release**
+2. 在 **Choose a tag** 输入框直接输入新 tag 名（如 `v1.0.0`，
+   输入不存在的名字时会提示「create new tag on publish」，默认基于当前 main 最新提交）
+3. 填写 Release 标题（如 `v1.0.0 首个稳定版`）和描述（本版包含的功能）
+4. 点击 **Publish release** —— tag 即创建成功并出现在仓库的 Tags 页
+
+### 用命令行创建（本地）
+
+```bash
+git tag v1.0.0                 # 打在当前提交
+git tag v0.9.0 <commit-id>     # 打在指定历史提交
+git push origin v1.0.0         # 推送单个 tag 到 GitHub
+git push origin --tags         # 推送全部 tag
+```
+
+### 使用者如何按版本获取代码
+
+```bash
+git clone https://github.com/zgliuwudi/tool-auto.git
+cd tool-auto
+git checkout v1.0.0            # 切换到 v1.0.0 的代码
+# 若要在此版本基础上开发：git checkout -b my-branch v1.0.0
+```
+
+也可在仓库 **Releases** 页直接下载对应版本的 Source code (zip)。
+
+### 版本号约定
+
+采用语义化版本 `v主版本.次版本.修订号`：
+- 主版本：大改（如换成网页方案、任务模型变更）
+- 次版本：新功能（如新增调度器 GUI）
+- 修订号：bug 修复
 
 ## 注意
 
