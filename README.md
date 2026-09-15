@@ -31,6 +31,53 @@
 在 `wecom_webhook.txt` 第一行填入群机器人 Webhook 地址，
 或设置环境变量 `WECOM_WEBHOOK`（二选一，密钥请勿提交到仓库）。
 
+## 配置企业微信 Webhook（wecom_webhook.txt）
+
+该文件含机器人密钥，出于安全考虑**没有提交到仓库**，需要自己创建。
+
+### 第 1 步：获取 Webhook 地址
+
+1. 打开企业微信的目标群聊 → 右上角「...」→ **群机器人** → **添加机器人**
+2. 创建后复制 Webhook 地址，形如：
+
+```
+https://qyapi.weixin.qq.com/cgi-webhook/send?key=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+（注意：机器人只能在**企业内部群**添加，客户群不支持。）
+
+### 第 2 步：创建配置文件
+
+在**项目根目录**（即 `run_meeting.py` 等脚本所在目录）新建文本文件
+`wecom_webhook.txt`，把地址完整粘贴到**第一行**，保存为 UTF-8 编码：
+
+```
+wecom_webhook.txt
+├── 与 click_reserve_meeting.py、send_to_wecom.py 等脚本同级
+└── 内容只有一行：完整的 Webhook 地址
+```
+
+文件内容范例：
+
+```
+https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+（`key=` 后面就是你的机器人密钥，粘贴时保持地址完整、不要加引号。）
+
+### 替代方式：环境变量
+
+不想用文件的话，也可以设置系统环境变量 `WECOM_WEBHOOK`，值为同样的
+Webhook 地址。脚本读取优先级：**环境变量 > wecom_webhook.txt 文件**。
+
+### 常见错误
+
+| 现象 | 原因 |
+| --- | --- |
+| 提示「未配置企业微信机器人 Webhook」 | 文件不存在/不在脚本同目录，或环境变量未设置 |
+| 企业微信返回 `errcode: 93000` | Webhook key 无效或机器人已被删除 |
+| 企业微信返回 `errcode: 45009` | 触发频控（每个机器人每分钟最多 20 条） |
+
 ## 使用
 
 ```bash
