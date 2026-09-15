@@ -40,6 +40,7 @@
 1. 打开企业微信的目标群聊 → 右上角「...」→ **群机器人** → **添加机器人**
 2. 创建后复制 Webhook 地址，形如：
 
+```
 https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
