@@ -1,0 +1,22 @@
+# 密钥文件，绝不提交
+wecom_webhook.txt
+
+# Python
+__pycache__/
+*.pyc
+
+# 调试临时产物
+debug_*.png
+check_*.png
+win.png
+diff.png
+crop.png
+_tmp*.py
+
+# 工具会话记录，含私人内容，不提交
+.workbuddy/
+
+# IDE / 系统
+.vscode/
+.idea/
+Thumbs.db
