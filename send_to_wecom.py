@@ -78,10 +78,16 @@ def send(url, payload):
 def main():
     parser = argparse.ArgumentParser(description="发送会议信息到企业微信群")
     parser.add_argument("--text", default=None, help="直接指定要发送的文本")
+    parser.add_argument(
+        "--url", default=None, help="Webhook 地址（不传则读环境变量或 wecom_webhook.txt）"
+    )
     parser.add_argument("--markdown", action="store_true", help="以 markdown 格式发送")
     args = parser.parse_args()
 
-    url = resolve_webhook()
+    if args.url:
+        url = args.url
+    else:
+        url = resolve_webhook()
 
     text = args.text
     if not text:
