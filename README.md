@@ -162,6 +162,24 @@ python send_to_wecom.py           # 只发送到企业微信群（内容取剪�
 - 用 OpenCV 模板匹配定位「预约会议」按钮、表单「保存」按钮锚点与各输入框
 - 文本输入走剪贴板 + Ctrl+V，支持中文
 - Win32 API 模拟鼠标点击与键盘操作
+﻿
+## 为什么采用模拟点击，而不是调用官方接口？
+
+很多会议软件（包括 WPS 会议）并没有开放公开的会议创建 API，也没有提供
+MCP、本地插件等标准化调用方式。直接逆向或伪造接口请求存在账号风控、
+签名校验、协议随版本变化等风险，且难以长期维护。
+
+本项目选择**模拟人的操作**（截图定位 + 鼠标键盘模拟），是一种刻意的设计取舍：
+
+- **通用性**：这套「找窗口 → 截图匹配 → 点击/输入」的流程不绑定任何软件，
+  同样思路可以迁移到钉钉、腾讯会议、飞书，甚至任何没有接口的桌面软件
+- **抗改版**：只依赖界面元素的截图模板，软件小版本更新通常只需重新截一张模板图
+- **零权限**：不需要企业开放 API 权限、管理员审批或应用密钥
+- **贴近真实用户**：行为与人工操作一致，不触碰协议层
+
+代价是自动化必须在**解锁的桌面会话**中运行，且界面大改版需要重新标定
+模板——这也是本项目文档中反复强调模板截图标定的原因。
+
 
 ## 版本与标签（Tag）
 
@@ -203,6 +221,50 @@ git checkout v1.0.0            # 切换到 v1.0.0 的代码
 - 主版本：大改（如换成网页方案、任务模型变更）
 - 次版本：新功能（如新增调度器 GUI）
 - 修订号：bug 修复
+
+﻿
+## 打包为 exe（PyInstaller）
+
+### 1. 安装依赖与打包工具
+
+`
+pip install opencv-python numpy pillow pyinstaller
+
+国内网络不佳时，推荐使用 HTTP 镜像（HTTPS 索引偶发被干扰）：
+
+`
+`
+python -m pip --isolated install pyinstaller --no-input -i http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
+
+### 2. 确认资源文件
+
+打包命令会把以下模板图片打入 exe 内部，请确认它们位于项目根目录：
+
+- meeting_button.png：主界面「预约会议」按钮模板
+- form_template.png：预约表单整体模板
+- save_button.png：表单「保存」按钮锚点模板
+
+### 3. 打包命令（单文件模式，PowerShell）
+
+`
+`powershell
+python -m PyInstaller --noconfirm --clean --onefile --windowed --name MeetingAssistant --icon assets/logo.ico --add-data "meeting_button.png;." --add-data "form_template.png;." --add-data "save_button.png;." --hidden-import click_reserve_meeting --hidden-import fill_meeting_form --hidden-import copy_meeting_info --hidden-import send_to_wecom --hidden-import open_wps_meeting --hidden-import store --hidden-import ui_widgets gui_app.py
+
+参数说明：
+
+- --onefile：打包为单个 exe，运行时自动解压资源到临时目录
+- --windowed：GUI 程序不显示控制台黑窗
+- --icon assets/logo.ico：exe 图标（仓库已内置多尺寸图标）
+- --add-data "文件;."：把模板图片打入 exe，运行时经 res_path() 从解压目录读取
+- --hidden-import：本地业务模块（非 pip 包）需显式声明才会被打包
+
+### 4. 产物与部署
+
+- 产物：dist\MeetingAssistant.exe（约 70 MB 单文件）
+- 拷贝到任意 Windows 10/11 电脑即可运行，无需安装 Python
+- 首次启动需解压资源，会慢几秒；任务/历史等数据文件自动生成在 exe 同目录
+- 建议为 exe 单独建一个文件夹存放，方便管理配置与备份
+`
 
 ## 注意
 

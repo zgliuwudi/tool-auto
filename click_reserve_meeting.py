@@ -48,7 +48,15 @@ except ImportError:  # 未安装 pyautogui 时用 ctypes 兜底
 POLL_TIMEOUT = 25
 
 # 默认模板图：用户提供的「预约会议」按钮截图
-DEFAULT_TEMPLATE = r"C:\Users\max\.workbuddy\clipboard-images\clipboard-2026-09-14T06-53-38-237Z-6f3c2b6b.png"
+DEFAULT_TEMPLATE = "meeting_button.png"  # 相对工作目录（exe/项目根目录）
+
+def res_path(name):
+    base = getattr(sys, "_MEIPASS", None)
+    if base:
+        return os.path.join(base, name)
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
+
+DEFAULT_TEMPLATE = res_path("meeting_button.png")
 
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32

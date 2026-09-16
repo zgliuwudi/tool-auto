@@ -59,7 +59,7 @@ FIELD_OFFSETS = {
 # 按钮实际区域 (385, 47, 63, 29)，锚点模板从窗口截图裁剪、按钮左上在模板内偏移 (8, 8)
 SAVE_BTN_IN_FORM = (385, 47)
 SAVE_BTN_IN_TPL = (8, 8)
-ANCHOR_TEMPLATE = "save_button.png"
+ANCHOR_TEMPLATE = crm.res_path("save_button.png")
 
 CF_UNICODETEXT = 13
 GMEM_MOVEABLE = 0x0002
@@ -211,7 +211,7 @@ def parse_datetime(s):
 def main():
     parser = argparse.ArgumentParser(description="自动填写 WPS 会议预约表单")
     parser.add_argument("--config", default="meeting_config.json", help="配置文件路径")
-    parser.add_argument("--template", default="form_template.png", help="表单整体模板图")
+    parser.add_argument("--template", default=crm.res_path("form_template.png"), help="表单整体模板图")
     parser.add_argument("--threshold", type=float, default=0.9, help="锚点匹配阈值")
     parser.add_argument("--dry-run", action="store_true", help="只定位表单和字段，不点击")
     args = parser.parse_args()

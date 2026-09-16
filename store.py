@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """数据层：任务 / 企业微信群 Webhook / 执行历史 / 系统设置的 JSON 存取，
 以及到点执行会议预约流水线的调度线程。"""
+import importlib
+import io
 import json
 import os
 import subprocess
@@ -9,7 +11,12 @@ import threading
 import time
 from datetime import datetime, timedelta
 
-BASE = os.path.dirname(os.path.abspath(__file__))
+# exe（PyInstaller）模式下配置/数据文件放在 exe 所在目录，而非临时解压目录
+FROZEN = getattr(sys, "frozen", False)
+BASE = (os.path.dirname(sys.executable) if FROZEN
+        else os.path.dirname(os.path.abspath(__file__)))
+if FROZEN:
+    os.chdir(BASE)  # exe 模式下模板/配置均相对 exe 目录
 TASKS_FILE = os.path.join(BASE, "scheduler_tasks.json")
 GROUPS_FILE = os.path.join(BASE, "scheduler_groups.json")
 HISTORY_FILE = os.path.join(BASE, "scheduler_history.json")
@@ -90,23 +97,49 @@ def group_url(name):
 
 
 # ---------- 执行流水线 ----------
-def _run_step(script, log):
-    log("  $ python %s" % script)
-    p = subprocess.run(
-        [sys.executable, script],
-        cwd=BASE,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=600,
-    )
-    out = (p.stdout or "") + (p.stderr or "")
+def run_step(module_name, argv, log):
+    """统一执行入口。
+
+    源码模式：子进程 `python xxx.py`，崩溃互不影响；
+    exe 模式（PyInstaller）：无独立解释器，改为进程内调用各脚本 main()。
+    """
+    log("  $ %s %s" % (module_name, " ".join(argv)))
+    if not FROZEN:
+        p = subprocess.run(
+            [sys.executable, module_name + ".py"] + argv,
+            cwd=BASE,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=600,
+        )
+        out = (p.stdout or "") + (p.stderr or "")
+        tail = out.strip().splitlines()[-3:] if out.strip() else []
+        for line in tail:
+            log("    " + line)
+        if p.returncode != 0:
+            raise RuntimeError("%s 退出码 %d" % (module_name, p.returncode))
+        return
+
+    old_argv = sys.argv
+    old_out, old_err = sys.stdout, sys.stderr
+    buf = io.StringIO()
+    sys.argv = [module_name + ".py"] + argv
+    sys.stdout = sys.stderr = buf
+    try:
+        importlib.import_module(module_name).main()
+    except SystemExit as e:
+        code = e.code if isinstance(e.code, int) else (0 if e.code is None else 1)
+        if code != 0:
+            raise RuntimeError("%s 退出码 %d" % (module_name, code))
+    finally:
+        sys.stdout, sys.stderr = old_out, old_err
+        sys.argv = old_argv
+    out = buf.getvalue()
     tail = out.strip().splitlines()[-3:] if out.strip() else []
     for line in tail:
         log("    " + line)
-    if p.returncode != 0:
-        raise RuntimeError("%s 退出码 %d" % (script, p.returncode))
 
 
 def write_meeting_config(task):
@@ -129,25 +162,13 @@ def execute_task(task, log):
     def once(attempt):
         log("第 %d 次尝试" % attempt)
         write_meeting_config(task)
-        for script in (
-            "click_reserve_meeting.py",
-            "fill_meeting_form.py",
-            "copy_meeting_info.py",
+        for module_name in (
+            "click_reserve_meeting",
+            "fill_meeting_form",
+            "copy_meeting_info",
         ):
-            _run_step(script, log)
-        cmd = [sys.executable, "send_to_wecom.py"]
-        if url:
-            cmd += ["--url", url]
-        log("  $ python send_to_wecom.py")
-        p = subprocess.run(
-            cmd, cwd=BASE, capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=120,
-        )
-        out = (p.stdout or "") + (p.stderr or "")
-        for line in out.strip().splitlines()[-3:]:
-            log("    " + line)
-        if p.returncode != 0:
-            raise RuntimeError("send_to_wecom.py 退出码 %d" % p.returncode)
+            run_step(module_name, [], log)
+        run_step("send_to_wecom", ["--url", url] if url else [], log)
 
     attempt = 1
     while True:
