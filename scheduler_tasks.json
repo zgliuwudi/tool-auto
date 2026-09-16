@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "id": "1789526800212",
+    "name": "周例会",
+    "enabled": true,
+    "trigger": "08:00",
+    "meeting_start": "09:30",
+    "meeting_end": "12:00",
+    "weekdays": [
+      0
+    ],
+    "group": "周例会测试群",
+    "last_run_date": null
+  }
+]
