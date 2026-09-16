@@ -1,5 +1,10 @@
 # 密钥文件，绝不提交
 wecom_webhook.txt
+scheduler_groups.json
+
+# 运行时产物
+scheduler_history.json
+meeting_config.json
 
 # Python
 __pycache__/

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "1789523416929",
+    "name": "test",
+    "enabled": true,
+    "trigger": "09:00",
+    "meeting_end": "10:00",
+    "weekdays": [
+      0
+    ],
+    "group": "test",
+    "last_run_date": null
+  }
+]
