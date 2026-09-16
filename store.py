@@ -113,7 +113,8 @@ def write_meeting_config(task):
     today = datetime.now().strftime("%Y/%m/%d")
     cfg = {
         "subject": task.get("name", "会议"),
-        "start_time": "%s %s" % (today, task.get("trigger", "09:00")),
+        "start_time": "%s %s" % (today, task.get("meeting_start")
+                                 or task.get("trigger", "09:00")),
         "end_time": "%s %s" % (today, task.get("meeting_end", "10:00")),
     }
     _save(CONFIG_FILE, cfg)

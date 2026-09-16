@@ -452,8 +452,9 @@ class TasksPage(tk.Frame):
         info = tk.Frame(c, bg=C["card"])
         info.pack(fill="x", padx=14, pady=(0, 10))
         days = " ".join(store.WEEKDAY_NAMES[d] for d in t.get("weekdays", []))
-        tk.Label(info, text="🕐  %s    %s    下次: %s" % (
-            t.get("trigger", ""), days, store.next_run_desc(t)),
+        tk.Label(info, text="🕐  %s    会议 %s~%s    %s    下次: %s" % (
+            t.get("trigger", ""), t.get("meeting_start", t.get("trigger", "")),
+            t.get("meeting_end", ""), days, store.next_run_desc(t)),
             bg=C["card"], fg=C["muted"], font=FONT_S).pack(side="left")
 
     def _toggle(self, t, on):
@@ -570,13 +571,21 @@ class TaskDialog(tk.Toplevel):
         e_name.insert(0, self.task.get("name", ""))
         e_name.pack(fill="x", padx=24, pady=(2, 10))
 
-        tk.Label(self, text="执行时间", bg=C["card"], fg=C["muted"],
+        tk.Label(self, text="执行时间（到点自动预约）", bg=C["card"], fg=C["muted"],
                  font=FONT_S).pack(anchor="w", padx=24)
         e_time = tk.Entry(self, bg=C["entry"], fg=C["text"], insertbackground=C["text"],
                           relief="flat", font=FONT, highlightthickness=1,
                           highlightbackground=C["border"], width=12)
         e_time.insert(0, self.task.get("trigger", "09:00"))
         e_time.pack(anchor="w", padx=24, pady=(2, 10))
+
+        tk.Label(self, text="会议开始时间", bg=C["card"], fg=C["muted"],
+                 font=FONT_S).pack(anchor="w", padx=24)
+        e_start = tk.Entry(self, bg=C["entry"], fg=C["text"], insertbackground=C["text"],
+                           relief="flat", font=FONT, highlightthickness=1,
+                           highlightbackground=C["border"], width=12)
+        e_start.insert(0, self.task.get("meeting_start", self.task.get("trigger", "09:00")))
+        e_start.pack(anchor="w", padx=24, pady=(2, 10))
 
         tk.Label(self, text="会议结束时间", bg=C["card"], fg=C["muted"],
                  font=FONT_S).pack(anchor="w", padx=24)
@@ -616,17 +625,13 @@ class TaskDialog(tk.Toplevel):
             combo.current(0)
         combo.pack(fill="x", padx=24, pady=(2, 10))
 
-        en = tk.BooleanVar(value=self.task.get("enabled", True))
-        ttk.Checkbutton(self, text="启用此任务", variable=en).pack(
-            anchor="w", padx=24, pady=(0, 14))
-
         row = tk.Frame(self, bg=C["card"])
         row.pack(fill="x", padx=24, pady=(0, 18))
         button(row, "取消", self.destroy, bg=C["card2"]).pack(side="right", padx=4)
         button(row, "✔ 保存", lambda: self._save(
-            e_name, e_time, e_end, combo, en)).pack(side="right")
+            e_name, e_time, e_start, e_end, combo)).pack(side="right")
 
-    def _save(self, e_name, e_time, e_end, combo, en):
+    def _save(self, e_name, e_time, e_start, e_end, combo):
         name = e_name.get().strip()
         if not name:
             messagebox.showwarning("提示", "请填写任务名称", parent=self)
@@ -638,6 +643,22 @@ class TaskDialog(tk.Toplevel):
         except (ValueError, AssertionError):
             messagebox.showwarning("提示", "执行时间格式应为 HH:MM", parent=self)
             return
+        meeting_start = e_start.get().strip()
+        try:
+            h2, m2 = map(int, meeting_start.split(":"))
+            assert 0 <= h2 < 24 and 0 <= m2 < 60
+        except (ValueError, AssertionError):
+            messagebox.showwarning("提示", "会议开始时间格式应为 HH:MM", parent=self)
+            return
+        meeting_end = e_end.get().strip() or "10:00"
+        try:
+            h3, m3 = map(int, meeting_end.split(":"))
+            assert 0 <= h3 < 24 and 0 <= m3 < 60
+            assert (h3, m3) > (h2, m2)
+        except (ValueError, AssertionError):
+            messagebox.showwarning(
+                "提示", "会议结束时间必须大于开始时间", parent=self)
+            return
         weekdays = [v["idx"] for v in self._day_vars if v["on"]]
         if not weekdays:
             messagebox.showwarning("提示", "请至少选择一个重复日期", parent=self)
@@ -646,9 +667,10 @@ class TaskDialog(tk.Toplevel):
         tasks.append({
             "id": self.task.get("id"),
             "name": name,
-            "enabled": en.get(),
+            "enabled": self.task.get("enabled", True),  # 新增默认启用
             "trigger": "%02d:%02d" % (h, m),
-            "meeting_end": e_end.get().strip() or "10:00",
+            "meeting_start": "%02d:%02d" % (h2, m2),
+            "meeting_end": "%02d:%02d" % (h3, m3),
             "weekdays": sorted(weekdays),
             "group": combo.get(),
             "last_run_date": self.task.get("last_run_date"),
